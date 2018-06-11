@@ -3,6 +3,7 @@ package com.didispace.swagger.butler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.netflix.zuul.filters.Route;
 import org.springframework.cloud.netflix.zuul.filters.RouteLocator;
+import org.springframework.util.CollectionUtils;
 import springfox.documentation.swagger.web.SwaggerResource;
 import springfox.documentation.swagger.web.SwaggerResourcesProvider;
 
@@ -36,7 +37,6 @@ public class SwaggerResourcesProcessor implements SwaggerResourcesProvider {
             if (swaggerButlerConfig.getAutoGenerateFromZuulRoutes() == true && swaggerButlerConfig.needIgnore(routeName)) {
                 continue;
             }
-
             // 处理swagger文档的名称
             String name = routeName;
             if (resourceProperties != null && resourceProperties.getName() != null) {
@@ -56,7 +56,13 @@ public class SwaggerResourcesProcessor implements SwaggerResourcesProvider {
                 swaggerVersion = resourceProperties.getSwaggerVersion();
             }
 
-            resources.add(swaggerResource(name, location, swaggerVersion));
+            if (resourceProperties != null && !CollectionUtils.isEmpty(resourceProperties.getGroups())) {
+                for (String group : resourceProperties.getGroups()) {
+                    resources.add(swaggerResource(name + "-" + group, location + "?group=" + group, swaggerVersion));
+                }
+            } else {
+                resources.add(swaggerResource(name, location, swaggerVersion));
+            }
 
         }
 

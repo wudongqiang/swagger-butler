@@ -2,6 +2,9 @@ package com.didispace.swagger.butler;
 
 import lombok.Data;
 
+import java.util.HashSet;
+import java.util.Set;
+
 @Data
 public class SwaggerResourceProperties {
 
@@ -19,5 +22,10 @@ public class SwaggerResourceProperties {
      * 配置api文档的获取路径，不配置的话采用全局默认配置：/v2/api-docs
      */
     private String apiDocsPath;
+
+    /**
+     * 配置api文档的分组,默认不使用
+     */
+    private Set<String> groups = new HashSet<>();
 
 }
