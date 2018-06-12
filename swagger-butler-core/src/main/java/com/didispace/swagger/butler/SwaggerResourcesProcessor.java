@@ -1,20 +1,29 @@
 package com.didispace.swagger.butler;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.web.ServerProperties;
+import org.springframework.cloud.client.ServiceInstance;
+import org.springframework.cloud.client.discovery.DiscoveryClient;
+import org.springframework.cloud.client.discovery.simple.SimpleDiscoveryProperties;
+import org.springframework.cloud.client.serviceregistry.Registration;
 import org.springframework.cloud.netflix.zuul.filters.Route;
 import org.springframework.cloud.netflix.zuul.filters.RouteLocator;
+import org.springframework.cloud.netflix.zuul.filters.ZuulProperties;
 import org.springframework.util.CollectionUtils;
+import org.springframework.web.client.RestTemplate;
 import springfox.documentation.swagger.web.SwaggerResource;
 import springfox.documentation.swagger.web.SwaggerResourcesProvider;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class SwaggerResourcesProcessor implements SwaggerResourcesProvider {
 
     @Autowired
     private RouteLocator routeLocator;
-
+    @Autowired
+    private DiscoveryClient discoveryClient;
     @Autowired
     private SwaggerButlerProperties swaggerButlerConfig;
 
@@ -48,7 +57,7 @@ public class SwaggerResourcesProcessor implements SwaggerResourcesProvider {
             if (resourceProperties != null && resourceProperties.getApiDocsPath() != null) {
                 swaggerPath = resourceProperties.getApiDocsPath();
             }
-            String location = route.getFullPath().replace("**", swaggerPath);
+            String location = route.getFullPath().replace("/**", swaggerPath);
 
             // 处理swagger的版本设置
             String swaggerVersion = swaggerButlerConfig.getSwaggerVersion();
@@ -56,7 +65,10 @@ public class SwaggerResourcesProcessor implements SwaggerResourcesProvider {
                 swaggerVersion = resourceProperties.getSwaggerVersion();
             }
 
-            if (resourceProperties != null && !CollectionUtils.isEmpty(resourceProperties.getGroups())) {
+            if (swaggerButlerConfig.getAutoGenerateGroup()) {
+                String url =discoveryClient.getLocalServiceInstance().getUri()+ "/"+ routeName + swaggerButlerConfig.getApiDocResource();
+                resources.addAll(getSwaggerResources(url, name, location));
+            } else if (resourceProperties != null && !CollectionUtils.isEmpty(resourceProperties.getGroups())) {
                 for (String group : resourceProperties.getGroups()) {
                     resources.add(swaggerResource(name + "-" + group, location + "?group=" + group, swaggerVersion));
                 }
@@ -75,5 +87,22 @@ public class SwaggerResourcesProcessor implements SwaggerResourcesProvider {
         swaggerResource.setLocation(location);
         swaggerResource.setSwaggerVersion(version);
         return swaggerResource;
+    }
+
+    /**
+     * 使用获取资源的方式获取对应的group
+     * @param url
+     * @param name
+     * @param location
+     * @return
+     */
+    private List<SwaggerResource> getSwaggerResources(String url, String name, String location) {
+        SwaggerResource[] data = new RestTemplate().getForObject(url, SwaggerResource[].class);
+        for (SwaggerResource resource : data) {
+            //此处的resource.getName() 就是groupName
+            resource.setLocation(location + "?group=" + resource.getName());
+            resource.setName(name + "#" + resource.getName());
+        }
+        return Arrays.asList(data);
     }
 }

@@ -41,6 +41,17 @@ public class SwaggerButlerProperties {
     private Boolean autoGenerateFromZuulRoutes = false;
 
     /**
+     * 自动获取生GroupName
+     */
+    private Boolean autoGenerateGroup = false;
+
+    /**
+     * 获取swagger资源路径,包含group<br/>
+     * [{"name":"缓存","url":"/v2/api-docs?group=缓存","swaggerVersion":"2.0","location":"/v2/api-docs?group=缓存"},{"name":"风险扫描","url":"/v2/api-docs?group=风险扫描","swaggerVersion":"2.0","location":"/v2/api-docs?group=风险扫描"}]
+     */
+    private String  apiDocResource = "/swagger-resources";
+
+    /**
      * 不自动生成文档的路由名称，设置了ignoreRoutes之后，generateRoutes不生效（需要autoGenerateFromZuulRoutes=true）
      */
     private Set<String> ignoreRoutes = new HashSet<>();
